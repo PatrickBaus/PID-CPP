@@ -53,8 +53,8 @@ uint32_t PID::compute(const uint32_t input) {
     // -> Bilinear Transform instead of Backward difference
     // https://en.wikipedia.org/wiki/Bilinear_transform
     errorSum = signed_multiply_accumulate_saturated_32_and_32QN(    // Calculate (errorSum + ki*error) using saturating math
-        errorSum,
-        ki,
+        this->errorSum,
+        this->ki,
         error
     );
     // Calculate D term (Note: We actually calcualte -dInput)
@@ -66,22 +66,22 @@ uint32_t PID::compute(const uint32_t input) {
     const int32_t dInputNegative = signed_subtract_saturated_32_and_32(previousInput, input);    // Subtract using saturating math
 
     // Store the input to calculate the D-term next time
-    previousInput = input;
+    this->previousInput = input;
 
     if (unlikely(proportionalGain == proportionalToInput)) {
         errorSum = signed_multiply_accumulate_saturated_32_and_32QN(
-            errorSum,
-            kp,
+            this->errorSum,
+            this->kp,
             dInputNegative
         );
     }
 
     // This will prevent integral windup
-    errorSum = clamp(errorSum, outputMin, outputMax);
+    this->errorSum = clamp(errorSum, outputMin, outputMax);
 
     int32_t output = signed_multiply_accumulate_saturated_32_and_32QN(
-        errorSum,
-        kd,
+        this->errorSum,
+        this->kd,
         dInputNegative
     );
 
@@ -89,7 +89,7 @@ uint32_t PID::compute(const uint32_t input) {
     if (likely(proportionalGain == proportionalToError)) {
         output = signed_multiply_accumulate_saturated_32_and_32QN(
             output,
-            kp,
+            this->kp,
             error
         );
     }
