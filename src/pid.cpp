@@ -1,0 +1,157 @@
+/*    
+ *  The PID library is free software: you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as 
+ *  published by the Free Software Foundation, either version 3 of the 
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <stdlib.h>
+#include "pid.h"
+
+#define likely(x)       __builtin_expect(!!(x), 1)
+#define unlikely(x)     __builtin_expect(!!(x), 0)
+
+PID::PID(const uint32_t _setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t _qn, FeedbackDirection _feedbackDirection, ProportionalGain proportionalGain)
+    : feedbackDirection(_feedbackDirection), qn(_qn), setpoint(_setpoint) {
+    this->setTunings(kp, ki, kd, proportionalGain);
+}
+
+PID::PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t qn, FeedbackDirection feedbackDirection)
+    :PID::PID(setpoint, kp, ki, kd, qn, feedbackDirection, proportionalToError) {}
+
+PID::PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t qn)
+    :PID::PID(setpoint, kp, ki, kd, qn, feedbackNegative) {}
+
+
+/**
+    Calculate a new output and store update all internal state variables. Note: The input is a simple number without
+    any fixed point fractional precision. The reason is, that we need to scale the output according to the DAC
+    precision anyway.
+    
+    QN should be scaled to that it is Q(DAC_resolution).(32-DAC_resolution).
+
+    @param input The new input variable in Q32.0 format, that is with zero frational precision. The value is
+      an unsigned integer in Offset Binary notation.
+    @param *output The output in Q(DAC_resolution).0 format and is determinded by the ki, kp, kd
+      parameters used in the multiplications. The encoding is Offset Binary, so it directly be fed to most DACs.
+*/
+uint32_t PID::compute(const uint32_t input) {
+    // Calcualte P term
+    // Note: the calculation is (uint32_t)setpoint - (uint32_t)(input) = (int32_t)error (using signed math)
+    // This is true for offset binary values!
+    const int32_t error = signed_subtract_saturated_32_and_32(setpoint, input);    // Subtract using saturating math
+    // Calcualte I term
+    // TODO: Think about taking into account the previous result as well
+    // -> Bilinear Transform instead of Backward difference
+    // https://en.wikipedia.org/wiki/Bilinear_transform
+    errorSum = signed_multiply_accumulate_saturated_32_and_32QN(    // Calculate (errorSum + ki*error) using saturating math
+        errorSum,
+        ki,
+        error
+    );
+    // Calculate D term (Note: We actually calcualte -dInput)
+    // We do not calculate dError, because this would cause an output spike every time someone changes the setpoint
+    // dError = d(Setpoint - Input)_n - d(Setpoint - Input)_(n-1)
+    //        = dSetpoint - dInput
+    // We would like to get rid of the setpoint dependence and during normal operation, there is no difference
+    //        ≈ -dInput
+    const int32_t dInputNegative = signed_subtract_saturated_32_and_32(previousInput, input);    // Subtract using saturating math
+
+    // Store the input to calculate the D-term next time
+    previousInput = input;
+
+    if (unlikely(proportionalGain == proportionalToInput)) {
+        errorSum = signed_multiply_accumulate_saturated_32_and_32QN(
+            errorSum,
+            kp,
+            dInputNegative
+        );
+    }
+
+    // This will prevent integral windup
+    errorSum = clamp(errorSum, outputMin, outputMax);
+
+    int32_t output = signed_multiply_accumulate_saturated_32_and_32QN(
+        errorSum,
+        kd,
+        dInputNegative
+    );
+
+    // Normal PID
+    if (likely(proportionalGain == proportionalToError)) {
+        output = signed_multiply_accumulate_saturated_32_and_32QN(
+            output,
+            kp,
+            error
+        );
+    }
+
+    output = clamp(output, outputMin, outputMax);
+    output ^= 0x80000000;   // Convert from 2s complement to offset Binary
+    return (uint32_t)output >> qn;
+}
+
+/** Note: ki and kd must be normalized to the sampling time
+ */
+void PID::setTunings(const int32_t kp, const int32_t ki, const int32_t kd, const ProportionalGain proportionalGain) {
+    this->kp = (this->feedbackDirection == feedbackPositive) ? abs(kp) : -abs(kp);
+    this->ki = (this->feedbackDirection == feedbackPositive) ? abs(ki) : -abs(ki);
+    this->kd = (this->feedbackDirection == feedbackPositive) ? abs(kd) : -abs(kd);
+    
+    this->proportionalGain = proportionalGain;
+}
+
+void PID::setTunings(const int32_t kp, const int32_t ki, const int32_t kd) {
+   this->setTunings(kp, ki, kd, this->proportionalGain);
+}
+
+void PID::setOutputMin(const uint32_t value) {
+    this->outputMin = (int32_t)((value << this->qn) ^ 0x80000000);    // Convert from Offset Binary to Integer
+}
+
+void PID::setOutputMax(const uint32_t value) {
+    this->outputMax = (int32_t)((value << this->qn) ^ 0x80000000);    // Convert from Offset Binary to Integer
+}
+
+void PID::setSetpoint(const uint32_t value) {
+    this->setpoint = value ^ 0x80000000;
+}
+
+const uint32_t PID::getSetpoint() {
+    return this->setpoint ^ 0x80000000;
+}
+
+void PID::init(const uint32_t initialInput) {
+   this->previousInput = initialInput;
+}
+
+void PID::updateOutput(const uint32_t value) {
+    this->errorSum = clamp((value << this->qn), this->outputMin, this->outputMax);
+}
+
+void PID::setControllerFeedback(const FeedbackDirection feedbackDirection) {
+  this->feedbackDirection = feedbackDirection;
+
+  this->setTunings(this->kp, this->ki, this->kd);
+}
+
+const uint32_t PID::getKp() {
+    return this->kp;
+}
+
+const uint32_t PID::getKi() {
+    return  this->ki;
+}
+
+const uint32_t PID::getKd() {
+    return this->kd;
+}
+
