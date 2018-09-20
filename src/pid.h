@@ -1,9 +1,7 @@
-#ifndef PID_v1_h
-#define PID_v1_h
-#define LIBRARY_VERSION	1.2.1
+#ifndef PID_H
+#define PID_H
 
 #include <stdint.h>
-//#include <arm_math.h>
 
 static inline const int32_t clamp(int32_t value, int32_t min, int32_t max) __attribute__((always_inline, unused));
 static inline const int32_t clamp(int32_t value, int32_t min, int32_t max) {
