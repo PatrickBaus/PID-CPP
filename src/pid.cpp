@@ -16,8 +16,8 @@
 #include <stdlib.h>
 #include "pid.h"
 
-#define likely(x)       __builtin_expect(!!(x), 1)
-#define unlikely(x)     __builtin_expect(!!(x), 0)
+#define LIKELY(x)       __builtin_expect(!!(x), 1)
+#define UNLIKELY(x)     __builtin_expect(!!(x), 0)
 
 PID::PID(const uint32_t _setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t _qn, FeedbackDirection _feedbackDirection, ProportionalGain proportionalGain)
     : feedbackDirection(_feedbackDirection), qn(_qn), setpoint(_setpoint) {
@@ -47,7 +47,7 @@ uint32_t PID::compute(const uint32_t input) {
     // Calcualte P term
     // Note: the calculation is (uint32_t)setpoint - (uint32_t)(input) = (int32_t)error (using signed math)
     // This is true for offset binary values!
-    const int32_t error = signed_subtract_saturated_32_and_32(setpoint, input);    // Subtract using saturating math
+    const int32_t error = signed_subtract_saturated_32_and_32(this->setpoint, input);    // Subtract using saturating math
     // Calcualte I term
     // TODO: Think about taking into account the previous result as well
     // -> Bilinear Transform instead of Backward difference
@@ -68,7 +68,7 @@ uint32_t PID::compute(const uint32_t input) {
     // Store the input to calculate the D-term next time
     this->previousInput = input;
 
-    if (unlikely(proportionalGain == proportionalToInput)) {
+    if (UNLIKELY(proportionalGain == proportionalToInput)) {
         errorSum = signed_multiply_accumulate_saturated_32_and_32QN(
             this->errorSum,
             this->kp,
@@ -86,7 +86,7 @@ uint32_t PID::compute(const uint32_t input) {
     );
 
     // Normal PID
-    if (likely(proportionalGain == proportionalToError)) {
+    if (LIKELY(proportionalGain == proportionalToError)) {
         output = signed_multiply_accumulate_saturated_32_and_32QN(
             output,
             this->kp,
@@ -122,11 +122,11 @@ void PID::setOutputMax(const uint32_t value) {
 }
 
 void PID::setSetpoint(const uint32_t value) {
-    this->setpoint = value ^ 0x80000000;
+    this->setpoint = value;
 }
 
 const uint32_t PID::getSetpoint() {
-    return this->setpoint ^ 0x80000000;
+    return this->setpoint;
 }
 
 void PID::init(const uint32_t initialInput) {

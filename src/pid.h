@@ -50,7 +50,7 @@ static const inline int32_t signed_subtract_saturated_32_and_32(const int32_t a,
 
 static const inline int32_t signed_multiply_accumulate_saturated_32QN_and_32QN(const int32_t acc, const int32_t a, const int32_t b, const uint8_t qn) __attribute__((always_inline, unused));
 static const int32_t signed_multiply_accumulate_saturated_32QN_and_32QN(const int32_t acc, const int32_t a, const int32_t b, const uint8_t qn) {
-    // Don't worry about the 64-bit int, it is one op using the DSP extensions (smlal instruction)
+    // Don't worry about the 64-bit ints, it is one op using the DSP extensions (smlal instruction)
     // The compiler switch -O2 or -O3 is required! (Option Faster/Fastest)
     int64_t result = ((int64_t)acc << qn) + (int64_t) a * (int64_t) b;
     result >>= qn;    // When mulitplying two Qm.n numbers you will end up with a Qm^2.n^2 number, but we need Qm^2.n (fixed precision)
@@ -67,7 +67,7 @@ static const int32_t signed_multiply_accumulate_saturated_32QN_and_32QN(const in
     // }
     // return res;
     if (hi != (lo >> 31)) {
-        return ((uint32_t) (a ^ b) >> 31) + INT32_MAX;
+        result = ((uint32_t) (a ^ b) >> 31) + INT32_MAX;
     }
 
     return result;
