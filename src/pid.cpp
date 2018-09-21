@@ -16,9 +16,6 @@
 #include <stdlib.h>
 #include "pid.h"
 
-#define LIKELY(x)       __builtin_expect(!!(x), 1)
-#define UNLIKELY(x)     __builtin_expect(!!(x), 0)
-
 PID::PID(const uint32_t _setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t _qn, FeedbackDirection _feedbackDirection, ProportionalGain proportionalGain)
     : feedbackDirection(_feedbackDirection), qn(_qn), setpoint(_setpoint) {
     this->setTunings(kp, ki, kd, proportionalGain);

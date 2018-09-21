@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+#define LIKELY(x)       __builtin_expect(!!(x), 1)
+#define UNLIKELY(x)     __builtin_expect(!!(x), 0)
+
 static inline const int32_t clamp(int32_t value, int32_t min, int32_t max) __attribute__((always_inline, unused));
 static inline const int32_t clamp(int32_t value, int32_t min, int32_t max) {
     return (value < min) ? min : (value > max) ? max : value;
