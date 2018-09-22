@@ -6,8 +6,8 @@
 #define LIKELY(x)       __builtin_expect(!!(x), 1)
 #define UNLIKELY(x)     __builtin_expect(!!(x), 0)
 
-static inline const int32_t clamp(int32_t value, int32_t min, int32_t max) __attribute__((always_inline, unused));
-static inline const int32_t clamp(int32_t value, int32_t min, int32_t max) {
+static inline const int32_t clamp(const int32_t value, const int32_t min, const int32_t max) __attribute__((always_inline, unused));
+static inline const int32_t clamp(const int32_t value, const int32_t min, const int32_t max) {
     return (value < min) ? min : (value > max) ? max : value;
 }
 /* The instruction sets for different ARM processors can be found here
@@ -52,7 +52,7 @@ static const inline int32_t signed_subtract_saturated_32_and_32(const int32_t a,
 }
 
 static const inline int32_t signed_multiply_accumulate_saturated_32QN_and_32QN(const int32_t acc, const int32_t a, const int32_t b, const uint8_t qn) __attribute__((always_inline, unused));
-static const int32_t signed_multiply_accumulate_saturated_32QN_and_32QN(const int32_t acc, const int32_t a, const int32_t b, const uint8_t qn) {
+static const inline int32_t signed_multiply_accumulate_saturated_32QN_and_32QN(const int32_t acc, const int32_t a, const int32_t b, const uint8_t qn) {
     // Don't worry about the 64-bit ints, it is one op using the DSP extensions (smlal instruction)
     // The compiler switch -O2 or -O3 is required! (Option Faster/Fastest)
     int64_t result = ((int64_t)acc << qn) + (int64_t) a * (int64_t) b;
@@ -69,7 +69,7 @@ static const int32_t signed_multiply_accumulate_saturated_32QN_and_32QN(const in
     //     res = res2;
     // }
     // return res;
-    if (hi != (lo >> 31)) {
+    if (UNLIKELY(hi != (lo >> 31))) {
         result = ((uint32_t) (a ^ b) >> 31) + INT32_MAX;
     }
 
@@ -82,12 +82,12 @@ static const int32_t signed_multiply_accumulate_saturated_32QN_and_32QN(const in
  * This resembles the Arduino options "fastest".
  * To disassemble the ELF code to compare it to the code procuced by "Compiler Explorer"  do the following:
  * - Add __attribute__((noinline)), to make sure the compiler does not inline the code
- * - Compile it using the option "fastest"
+ * - Compile it using the option "fastest" or even better "fastest + LTO"
  * - Then go to /tmp/arduino_build_XXX , where XXX is the number found in the Arduino console (requires verbose output)
  * - Finally run ~/.arduino15/packages/arduino/tools/arm-none-eabi-gcc/4.8.3-2014q1/bin/arm-none-eabi-objdump -C -d your_sketch.ino.elf (replacing "your_sketch" with the name of your sketch)
  */
 static const inline int32_t signed_multiply_accumulate_saturated_32_and_32QN(const int32_t acc, const int32_t a, const int32_t b) __attribute__((always_inline, unused));
-static const int32_t signed_multiply_accumulate_saturated_32_and_32QN(const int32_t acc, const int32_t a, const int32_t b) {
+static const inline int32_t signed_multiply_accumulate_saturated_32_and_32QN(const int32_t acc, const int32_t a, const int32_t b) {
     // Don't worry about the 64-bit int, it is one op using the DSP extensions (smlal instruction)
     // The compiler switch -O2 or -O3 is required! (Option Faster/Fastest)
     int64_t result = acc + (int64_t) a * (int64_t) b;
@@ -103,7 +103,7 @@ static const int32_t signed_multiply_accumulate_saturated_32_and_32QN(const int3
     //     res = res2;
     // }
     // return res;
-    if (hi != (lo >> 31)) {
+    if (UNLIKELY(hi != (lo >> 31))) {
         return ((uint32_t) (a ^ b) >> 31) + INT32_MAX;
     }
 
@@ -126,7 +126,7 @@ class PID {
         PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t _qn, FeedbackDirection feedbackDirection);
         PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t _qn);
 
-        uint32_t compute(uint32_t input);
+        const uint32_t compute(uint32_t input);
 
         void setTunings(const int32_t kp, const int32_t ki, const int32_t kd);
         void setTunings(const int32_t kp, const int32_t ki, const int32_t kd, const ProportionalGain proportionalGain);

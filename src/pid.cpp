@@ -13,7 +13,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
+#include <stdlib.h>   // abs()
 #include "pid.h"
 
 PID::PID(const uint32_t _setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t _qn, FeedbackDirection _feedbackDirection, ProportionalGain proportionalGain)
@@ -27,7 +27,6 @@ PID::PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int3
 PID::PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t qn)
     :PID::PID(setpoint, kp, ki, kd, qn, feedbackNegative) {}
 
-
 /**
     Calculate a new output and store update all internal state variables. Note: The input is a simple number without
     any fixed point fractional precision. The reason is, that we need to scale the output according to the DAC
@@ -40,7 +39,7 @@ PID::PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int3
     @param *output The output in Q(DAC_resolution).0 format and is determinded by the ki, kp, kd
       parameters used in the multiplications. The encoding is Offset Binary, so it directly be fed to most DACs.
 */
-uint32_t PID::compute(const uint32_t input) {
+const uint32_t PID::compute(const uint32_t input) {
     // Calcualte P term
     // Note: the calculation is (uint32_t)setpoint - (uint32_t)(input) = (int32_t)error (using signed math)
     // This is true for offset binary values!
@@ -93,7 +92,7 @@ uint32_t PID::compute(const uint32_t input) {
 
     output = clamp(output, outputMin, outputMax);
     output ^= 0x80000000;   // Convert from 2s complement to offset Binary
-    return (uint32_t)output >> qn;
+    return (uint32_t)output >> this->qn;
 }
 
 /** Note: ki and kd must be normalized to the sampling time
