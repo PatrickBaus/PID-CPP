@@ -60,17 +60,9 @@ static const inline int32_t signed_multiply_accumulate_saturated_32QN_and_32QN(c
     int32_t hi = (int32_t)(result >> 32);
     int32_t lo = (int32_t)result;
     // We will branch here, because almost always the branch will *not* be hit, because we will not
-    // saturate. If the branch is hit more often, consider pulling the return statement out and always calcualting it,
-    // making the function branchless.
-    // Example:
-    // int32_t res = result.x;
-    // int32_t res2 = ((uint32_t)(a ^ b) >> 31) + INT32_MAX;
-    // if () {
-    //     res = res2;
-    // }
-    // return res;
+    // saturate. Unfortunately the Cortex Mx does not support CMVOs, so we cannot do this non-branching.
     if (UNLIKELY(hi != (lo >> 31))) {
-        result = ((uint32_t) (a ^ b) >> 31) + INT32_MAX;
+        return ((uint32_t) (a ^ b) >> 31) + INT32_MAX;
     }
 
     return result;
@@ -94,15 +86,7 @@ static const inline int32_t signed_multiply_accumulate_saturated_32_and_32QN(con
     int32_t hi = (int32_t)(result >> 32);
     int32_t lo = (int32_t)result;
     // We will branch here, because almost always the branch will *not* be hit, because we will not
-    // saturate. If the branch is hit more often, consider pulling the return statement out and always calcualting it,
-    // making the function branchless.
-    // Example:
-    // int32_t res = result.x;
-    // int32_t res2 = ((uint32_t)(a ^ b) >> 31) + INT32_MAX;
-    // if () {
-    //     res = res2;
-    // }
-    // return res;
+    // saturate. Unfortunately the Cortex Mx does not support CMVOs, so we cannot do this non-branching.
     if (UNLIKELY(hi != (lo >> 31))) {
         return ((uint32_t) (a ^ b) >> 31) + INT32_MAX;
     }
