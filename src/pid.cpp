@@ -59,7 +59,7 @@ const uint32_t PID::compute(const uint32_t input) {
     //        = dSetpoint - dInput
     // We would like to get rid of the setpoint dependence and during normal operation, there is no difference
     //        ≈ -dInput
-    const int32_t dInputNegative = signed_subtract_saturated_32_and_32(previousInput, input);    // Subtract using saturating math
+    const int32_t dInputNegative = signed_subtract_saturated_32_and_32(this->previousInput, input);    // Subtract using saturating math
 
     // Store the input to calculate the D-term next time
     this->previousInput = input;
