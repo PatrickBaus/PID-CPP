@@ -1,6 +1,6 @@
 //#define FIXED_POINT_MATH
-#define SINGLE_PRECISION_MATH
-//#define DOUBLE_PRECISION_MATH
+//#define SINGLE_PRECISION_MATH
+#define DOUBLE_PRECISION_MATH
 
 #include "pid.h"
 #ifdef FIXED_POINT_MATH
@@ -24,10 +24,10 @@ myFloatType previousInput = 0;
 myFloatType outputSum = 0;
 myFloatType setpoint = 24.00;
 myFloatType kp = -383.00;
-myFloatType ki = -0.5;
+myFloatType ki = -100;
 myFloatType kd = -2.0;
 
-static inline const  __attribute__((always_inline, unused)) myFloatType clamp(myFloatType value, myFloatType min, myFloatType max) {
+static inline const __attribute__((always_inline, unused)) myFloatType clamp(myFloatType value, myFloatType min, myFloatType max) {
     return (value < min) ? min : (value > max) ? max : value;
 }
 
@@ -35,25 +35,25 @@ static inline const  __attribute__((always_inline, unused)) myFloatType clamp(my
 // It was adapted so allow single precision as well.
 // https://github.com/br3ttb/Arduino-PID-Library
 myFloatType __attribute__((noinline)) compute(const myFloatType input) {
-      const myFloatType error = setpoint - input;
-      const myFloatType dInput = (input - previousInput);
-      outputSum+= (ki * error);
+    const myFloatType error = setpoint - input;
+    const myFloatType dInput = (input - previousInput);
+    outputSum+= (ki * error);
 
-      if (UNLIKELY(proportionalGain == proportionalToInput)) {
+    if (UNLIKELY(proportionalGain == proportionalToInput)) {
         outputSum-= kp * dInput;
-      }
+    }
 
-      outputSum = clamp(outputSum, 0.00, 4055.00);
+    outputSum = clamp(outputSum, 0.00, 4055.00);
 
-      myFloatType output = outputSum - kd * dInput;
-      if (LIKELY(proportionalGain == proportionalToError)) {
+    myFloatType output = outputSum - kd * dInput;
+    if (LIKELY(proportionalGain == proportionalToError)) {
         output += kp * error;
-      }
+    }
 
-      output = clamp(output, 0.00, 4055.00);
+    output = clamp(output, 0.00, 4055.00);
 
-      previousInput = input;
-      return output;
+    previousInput = input;
+    return output;
 }
 #endif    // End SINGLE_PRECISION_MATH || DOUBLE_PRECISION_MATH
 
@@ -97,10 +97,9 @@ void loop() {
 
   // The actual function under test
   #ifdef FIXED_POINT_MATH
-    output = pidController.compute(25420);
-    //output = compute(25420+80);
+    output = pidController.compute(25420+80);
   #elif defined(SINGLE_PRECISION_MATH) || defined(DOUBLE_PRECISION_MATH)
-    output = compute(24.00);
+    output = compute(26.0);
   #endif
   
   #if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)    // Teensy 3.x (Cortex M4)
