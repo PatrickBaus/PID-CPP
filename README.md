@@ -1,0 +1,130 @@
+# PID-CPP
+This a C++ library implementing a PID controller intended for microcontrollers. It is a fixed point math implementation that was optimized for performance on the ARM Cortex M4 processors. The library was inspired by the excellent [blog series](http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/) written by Brett Beauregard and the PID library he put on Github (https://github.com/br3ttb/Arduino-PID-Library/).
+
+## Floating Point vs. Fixed Point Arithmetic
+
+### Floating Point Arithmetic
+The library written by Brett Beauregard and numerous other implementations that can be found on the web do the calculations using floating point arithmetic. The advantage of this approach is, that one needs to know little about the input and output of the system as these datatypes have a large dynamic range (due to the use of the exponent bits). These libraries can therefore do their calculations in real units, which make the whole system more intuitive for newcomers.
+
+The downside is, that without a dedicated floating point unit, both single precision and especially double precision floats are slow and the majority of all microcontrollers does not have an FPU. Also single precision floats are limited by their 24 bit precision (+1 sign bit).
+
+### Fixed Point Arithmetic
+Fixed point arithmetic on the other hand is a more natural representation for the control loop. In real life most input data comes from components like an ADC or sensor, which outputs some binary value in its own system of units. The PID output will then be written to some DAC and is scaled to real units by the output stage. In any application that does not require huge amounts of dynamic range, the additional bits used by floats to scale range can then be used for more precision.
+
+The downside is that we need saturating mathematical operations to make sure, that the calculations do not produce unexpected results. Some microcontrollers like the Cortex M4 support DSP instructions, which can do this in hardware.
+
+The table below gives a summary of the different datatypes. Using single precision floats and ADC/DAC combinations with more than 12 bit is questionable because the system 'gain' will then be limited to (24 - DAC_resolution).
+
+|Datatype|Width|Precision|Comments|
+|--|--|--|--|
+|Single Precision Float|32 bit|24 + 1 sign bits|Requires 32-bit FPU to be efficient|
+|Double Precision Float|64 bit|53 + 1 sign bits|Requires 64-bit FPU to be efficient|
+|Q31 Fixed Point|32 bit|31 + 1 sign bits|Requires 32-bit processor to be efficient|
+
+## API
+#### Constructor:
+```c
+   enum FeedbackDirection {
+     feedbackPositive = 0,
+     feedbackNegative = 1,
+   };
+   enum ProportionalGain {
+     proportionalToInput = 0,
+     proportionalToError = 1,
+   };
+
+   PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t _qn, FeedbackDirection feedbackDirection, ProportionalGain proportionalGain);
+   PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t _qn, FeedbackDirection feedbackDirection);
+   PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t _qn);
+```
+___Arguments___
+* `setpoint` [unsigned long] : The value in units of the input. It is the sensor value the controller will try to attain
+* `kp` [long] : The factor of the proportional term. The sign will ignored and  be set by the `feedbackDirection` parameter
+* `ki` [long] : The factor of the integral term. This value must be scaled (ki * period), if the sampling period changes.
+* `kd` [long] : The factor of the derivative term. This value must be scaled (ki / period), if the sampling period changes.
+* `qn` [unsigned short] : The number of bits used to designate the fractional portion of the output.  
+Set this number to be `32 - DAC_resolution`
+* `feedbackDirection` [FeedbackDirection] : Choose whether a positive error causes a positve response (feedbackPositive) or a negative response(feedbackNegative).  
+Default: `feedbackNegative`
+* `proportionalGain` [ProportionalGain] : Choose whether kp acts on the error (proportionalToError) or the deviation from the initial input (proportionalToInput). See [here](http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/) for more info.  
+Default: `proportionalToError`
+
+### Methods
+```c
+   const uint32_t compute(uint32_t input);
+```
+This function is the PID routine, that calculates the output based on the input and previous inputs. It needs to be called it in regular intervals. In contrast to other libraries, this is not handled internally, because it gives more flexibility to the user.
+
+___Arguments___
+* `value` [unsigned long] : The sensor input
+
+___Returns___
+* [unsigned long] : The PID output. It will be scaled using the `qn` parameter, so that it does **not** contain the fractional part. It can be directly fed to the output hardware.
+
+
+
+### Setters
+```c
+   void init(const uint32_t initialInput);
+```
+Call this function after switching from PID control to manual control or when initializing the PID controller.
+
+___Arguments___
+* `value` [unsigned long] : This value initilizes the internal previous input variable used to calculate the derivative term
+
+```c
+   void updateOutput(const uint32_t value);
+```
+Call this function whenever the output is manually change to make the PID controller aware of the change. The PID controller needs to know the previous output when switching from off to on, because this will prevent a bump in the output.
+
+___Arguments___
+* `value` [unsigned long] : This value initilizes the internal error sum of the integral term.
+
+```c
+   void setOutputMin(const uint32_t value);
+   void setOutputMax(const uint32_t value);
+```
+___Arguments___
+* `value` [unsigned long] : This value clamps the output to the the values chosen. Do not clamp the output afterwards, because using this function makes sure that the PID controller is aware of the limits and treats the integral term appropriately.
+
+```c
+   void setTunings(const int32_t kp, const int32_t ki, const int32_t kd, const ProportionalGain proportionalGain);
+   void setTunings(const int32_t kp, const int32_t ki, const int32_t kd);
+   void setSetpoint(const uint32_t value);
+   void setControllerFeedback(const FeedbackDirection feedbackDirection);
+```
+___Arguments___
+
+See [constructor](#constructor)
+
+### Setters
+```c
+   const uint32_t getKp();
+   const uint32_t getKi();
+   const uint32_t getKd();
+   const uint32_t getSetpoint();
+```
+Use these to query the internal state.
+
+## Examples
+TODO
+
+## Performance Comparison
+TODO
+
+
+## Versioning
+
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/PatrickBaus/PID-CPP/tags). 
+
+## Authors
+
+* **Patrick Baus** - *Initial work* - [PatrickBaus](https://github.com/PatrickBaus)
+
+## License
+
+This project is licensed under the GPL v3 license - see the [LICENSE](LICENSE) file for details
+
+## Acknowledgments
+
+* [Brett Beauregard](https://github.com/br3ttb/) for his excellent work in explaining all the PID details and improvements
