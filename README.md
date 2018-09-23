@@ -1,6 +1,8 @@
 # PID-CPP
 This a C++ library implementing a PID controller intended for microcontrollers. It is a fixed point math implementation that was optimized for performance on the ARM Cortex M4 processors. The library was inspired by the excellent [blog series](http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/) written by Brett Beauregard and the PID library he put on Github (https://github.com/br3ttb/Arduino-PID-Library/).
 
+**This library is about a [factor of 7-10](#performance-comparison) faster than the Arduino PID library!**
+
 ## Floating Point vs. Fixed Point Arithmetic
 
 ### Floating Point Arithmetic
@@ -164,8 +166,61 @@ void loop() {
 ```
 
 ## Performance Comparison
-TODO
+In terms of performance only two models the [Teensy](https://www.pjrc.com/teensy/techspecs.html) platform was tested, because they have a wide range of 32-bit processors.
 
+|Model|Processor|Clock Speed in MHz|Comments|
+|--|--|--|--|
+|Teensy LC|Cortex M0+|48|32-bit|
+|Teensy 3.6|Cortex M4F|180|32-bit, FPU|
+
+The full benchmark sketch can be found [here](extras/benchmark/benchmark.ino). Itcompares the number of instruction cycles needed to run the `compute()` method.
+
+For the floating point test, the code below was used, which was adapted from the [Arduino PID Library](https://github.com/br3ttb/Arduino-PID-Library/). The `LIKELY`/`UNLIKELY` macro was used to tell the compiler about the default values and which conditional path was more likely. All benchmarks were compiled using the option Fastests with LTO (-O3 -flto):
+
+The floating point code is more simple because overflow only needs to be checked at the end. It is therefore expected to run faster if there is a dedicated floating point unit available.
+
+```c
+#ifdef DOUBLE_PRECISION_MATH
+  typedef double myFloatType;
+#elif defined(SINGLE_PRECISION_MATH)
+  typedef float myFloatType;
+#endif
+
+static inline const __attribute__((always_inline, unused)) myFloatType clamp(myFloatType value, myFloatType min, myFloatType max) {
+  return (value < min) ? min : (value > max) ? max : value;
+}
+
+myFloatType __attribute__((noinline)) compute(const myFloatType input) {
+   const myFloatType error = setpoint - input;
+   const myFloatType dInput = (input - previousInput);
+   outputSum+= (ki * error);
+
+   if (UNLIKELY(proportionalGain == proportionalToInput)) {
+      outputSum-= kp * dInput;
+   }
+
+   outputSum = clamp(outputSum, 0.00, 4055.00);
+
+   myFloatType output = outputSum - kd * dInput;
+   if (LIKELY(proportionalGain == proportionalToError)) {
+      output += kp * error;
+   }
+
+   output = clamp(output, 0.00, 4055.00);
+
+   previousInput = input;
+   return output;
+}
+```
+The spread in the number of Ops required to run one iteration of the `compute()` loop is the result of the branching required when saturating the output.
+
+|Algorithm|Teensy LC|Teensy 3.6|
+|--|--|--|
+|Fixed Point Arithmetic|380-392 Ops/Call|88-104 Ops/Call|
+|Single Precision Arithmetic|1522-1558 Ops/Call|48-55 Ops/Call|
+|Double Precision Arithmetic|2827-2845 Ops/Call|1107-1200 Ops/Call|
+
+In conclusion it can be said, that unless you have an MCU with an FPU and do not need the precision of 32 bits, than it is recommended to fixed point arithmetic for a 7-10x increase in performance.
 
 ## Versioning
 
