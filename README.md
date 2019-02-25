@@ -173,7 +173,7 @@ In terms of performance only two models the [Teensy](https://www.pjrc.com/teensy
 |Teensy LC|Cortex M0+|48|32-bit|
 |Teensy 3.6|Cortex M4F|180|32-bit, FPU|
 
-The full benchmark sketch can be found [here](extras/benchmark/benchmark.ino). Itcompares the number of instruction cycles needed to run the `compute()` method.
+The full benchmark sketch can be found [here](extras/benchmark/benchmark.ino). It calculates the number of instruction cycles needed to run the `compute()` method.
 
 For the floating point test, the code below was used, which was adapted from the [Arduino PID Library](https://github.com/br3ttb/Arduino-PID-Library/). The `LIKELY`/`UNLIKELY` macro was used to tell the compiler about the default values and which conditional path was more likely. All benchmarks were compiled using the option Fastests with LTO (-O3 -flto):
 
