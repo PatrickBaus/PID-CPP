@@ -220,7 +220,7 @@ The spread in the number of Ops required to run one iteration of the `compute()`
 |Single Precision Arithmetic|1522-1558 Ops/Call|48-55 Ops/Call|
 |Double Precision Arithmetic|2827-2845 Ops/Call|1107-1200 Ops/Call|
 
-In conclusion it can be said, that unless you have an MCU with an FPU and do not need the precision of 32 bits, than it is recommended to fixed point arithmetic for a 7-10x increase in performance.
+In conclusion it can be said, that unless you have an MCU with a dedicated FPU and do not need the precision of 32 bits, than it is recommended to use fixed point arithmetic for a 7-10x increase in performance.
 
 ## Versioning
 
