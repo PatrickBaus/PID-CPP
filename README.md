@@ -166,7 +166,7 @@ void loop() {
 ```
 
 ## Performance Comparison
-In terms of performance only two models the [Teensy](https://www.pjrc.com/teensy/techspecs.html) platform was tested, because they have a wide range of 32-bit processors.
+In terms of performance only two models of the [Teensy](https://www.pjrc.com/teensy/techspecs.html) platform were tested, because they have a wide range of 32-bit processors.
 
 |Model|Processor|Clock Speed in MHz|Comments|
 |--|--|--|--|
@@ -177,7 +177,7 @@ The full benchmark sketch can be found [here](extras/benchmark/benchmark.ino). I
 
 For the floating point test, the code below was used, which was adapted from the [Arduino PID Library](https://github.com/br3ttb/Arduino-PID-Library/). The `LIKELY`/`UNLIKELY` macro was used to tell the compiler about the default values and which conditional path was more likely. All benchmarks were compiled using the option Fastests with LTO (-O3 -flto):
 
-The floating point code is more simple because overflow only needs to be checked at the end. It is therefore expected to run faster if there is a dedicated floating point unit available.
+The floating point code is simpler because overflow conditions only need to be checked at the end. It is therefore expected to run faster if there is a dedicated floating point unit available (that is single precision, 32-bit floats).
 
 ```c
 #ifdef DOUBLE_PRECISION_MATH
