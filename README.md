@@ -11,9 +11,9 @@ The library written by Brett Beauregard and numerous other implementations that 
 The downside is, that without a dedicated floating point unit, both single precision and especially double precision floats are slow and the majority of all microcontrollers does not have an FPU. Also single precision floats are limited by their 24 bit precision (+1 sign bit).
 
 ### Fixed Point Arithmetic
-Fixed point arithmetic on the other hand is a more natural representation for the control loop. In real life most input data comes from components like an ADC or sensor, which outputs some binary value in its own system of units. The PID output will then be written to some DAC and is scaled to real units by the output stage. In any application that does not require huge amounts of dynamic range, the additional bits used by floats to scale range can then be used for more precision.
+Fixed point arithmetic on the other hand is a more natural representation for the control loop. In real life most input data comes from components like an ADC or sensor, which outputs some binary value in its own system of units. The PID output will then be written to some DAC and is scaled to real units by the output stage. In any application that does not require huge amounts of dynamic range, the additional bits used by floats to scale the range (see the table below) can then be used for more precision.
 
-The downside is that we need saturating mathematical operations to make sure, that the calculations do not produce unexpected results. Some microcontrollers like the Cortex M4 support DSP instructions, which can do this in hardware.
+The downside is, that we need saturating mathematical operations to make sure, that the calculations do not produce unexpected results. Some microcontrollers like the Cortex M4 support DSP instructions, which can do this in hardware.
 
 The table below gives a summary of the different datatypes. Using single precision floats and ADC/DAC combinations with more than 12 bit is questionable because the system 'gain' will then be limited to (24 - DAC_resolution).
 
@@ -40,8 +40,8 @@ The table below gives a summary of the different datatypes. Using single precisi
    PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t _qn);
 ```
 ___Arguments___
-* `setpoint` [unsigned long] : The value in units of the input. It is the sensor value the controller will try to attain
-* `kp` [long] : The factor of the proportional term. The sign will ignored and  be set by the `feedbackDirection` parameter
+* `setpoint` [unsigned long] : The value in units of the input. It is the sensor value the controller will servo
+* `kp` [long] : The factor of the proportional term. The sign will ignored, but can be set by the `feedbackDirection` parameter
 * `ki` [long] : The factor of the integral term. This value must be scaled (ki * period), if the sampling period changes.
 * `kd` [long] : The factor of the derivative term. This value must be scaled (ki / period), if the sampling period changes.
 * `qn` [unsigned short] : The number of bits used to designate the fractional portion of the output.  
@@ -55,7 +55,7 @@ Default: `proportionalToError`
 ```c
    const uint32_t compute(uint32_t input);
 ```
-This function is the PID routine, that calculates the output based on the input and previous inputs. It needs to be called it in regular intervals. In contrast to other libraries, this is not handled internally, because it gives more flexibility to the user.
+This function is the PID routine. It calculates the output based on the input and previous inputs. It needs to be called in regular intervals. In contrast to other libraries, this is not handled internally, because it gives more flexibility to the user.
 
 ___Arguments___
 * `value` [unsigned long] : The sensor input
@@ -63,13 +63,11 @@ ___Arguments___
 ___Returns___
 * [unsigned long] : The PID output. It will be scaled using the `qn` parameter, so that it does **not** contain the fractional part. It can be directly fed to the output hardware.
 
-
-
 ### Setters
 ```c
    void init(const uint32_t initialInput);
 ```
-Call this function after switching from PID control to manual control or when initializing the PID controller.
+Call this function after switching from manual control to PID control or when initializing the PID controller.
 
 ___Arguments___
 * `value` [unsigned long] : This value initilizes the internal previous input variable used to calculate the derivative term
@@ -220,7 +218,7 @@ The spread in the number of Ops required to run one iteration of the `compute()`
 |Single Precision Arithmetic|1522-1558 Ops/Call|48-55 Ops/Call|
 |Double Precision Arithmetic|2827-2845 Ops/Call|1107-1200 Ops/Call|
 
-In conclusion it can be said, that unless you have an MCU with a dedicated FPU and do not need the precision of 32 bits, than it is recommended to use fixed point arithmetic for a 7-10x increase in performance.
+In conclusion, it can be said, that unless you have an MCU with a dedicated FPU and do not need the precision of 32 bits, than it is recommended to use fixed point arithmetic for a 7-10x increase in performance.
 
 ## Versioning
 
