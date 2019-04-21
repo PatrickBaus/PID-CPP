@@ -77,7 +77,7 @@ ___Arguments___
 ```c
    void updateOutput(const uint32_t value);
 ```
-Call this function whenever the output is manually change to make the PID controller aware of the change. The PID controller needs to know the previous output when switching from off to on, because this will prevent a bump in the output.
+Call this function whenever the output was manually changed to make the PID controller aware of the change. The PID controller needs to know the previous output when switching from off to on, to make sure there is no bump in the output due to a discontinuity.
 
 ___Arguments___
 * `value` [unsigned long] : This value initilizes the internal error sum of the integral term.
