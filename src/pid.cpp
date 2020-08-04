@@ -38,7 +38,7 @@ namespace Pid {
       @param input The new input variable in Q32.0 format, that is with zero frational precision. The value is
         an unsigned integer in Offset Binary notation.
       @param *output The output in Q(DAC_resolution).0 format and is determinded by the ki, kp, kd
-        parameters used in the multiplications. The encoding is Offset Binary, so it directly be fed to most DACs.
+        parameters used in the multiplications. The encoding is Offset Binary, so it can be directly fed to most DACs.
   */
   const uint32_t PID::compute(const uint32_t input) {
       // Calcualte P term
@@ -54,7 +54,7 @@ namespace Pid {
           this->ki,
           error
       );
-      // Calculate D term (Note: We actually calcualte -dInput)
+      // Calculate D term (Note: We actually calculate -dInput)
       // We do not calculate dError, because this would cause an output spike every time someone changes the setpoint
       // dError = d(Setpoint - Input)_n - d(Setpoint - Input)_(n-1)
       //        = dSetpoint - dInput
@@ -99,9 +99,10 @@ namespace Pid {
   /** Note: ki and kd must be normalized to the sampling time
    */
   void PID::setTunings(const int32_t kp, const int32_t ki, const int32_t kd, const ProportionalGain proportionalGain) {
-      this->kp = (this->feedbackDirection == feedbackPositive) ? abs(kp) : -abs(kp);
-      this->ki = (this->feedbackDirection == feedbackPositive) ? abs(ki) : -abs(ki);
-      this->kd = (this->feedbackDirection == feedbackPositive) ? abs(kd) : -abs(kd);
+      // Invert the output, if the plant response to an error is positive
+      this->kp = (this->feedbackDirection == feedbackNegative) ? abs(kp) : -abs(kp);
+      this->ki = (this->feedbackDirection == feedbackNegative) ? abs(ki) : -abs(ki);
+      this->kd = (this->feedbackDirection == feedbackNegative) ? abs(kd) : -abs(kd);
       
       this->proportionalGain = proportionalGain;
   }

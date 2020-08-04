@@ -96,8 +96,8 @@ namespace Pid {
   }
 
   enum FeedbackDirection {
-      feedbackPositive = 0,
-      feedbackNegative = 1,
+      feedbackNegative = 0,
+      feedbackPositive = 1,
   };
 
   enum ProportionalGain {
