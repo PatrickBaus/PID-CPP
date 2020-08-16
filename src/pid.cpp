@@ -40,7 +40,7 @@ namespace Pid {
       @param *output The output in Q(DAC_resolution).0 format and is determinded by the ki, kp, kd
         parameters used in the multiplications. The encoding is Offset Binary, so it can be directly fed to most DACs.
   */
-  const uint32_t PID::compute(const uint32_t input) {
+  uint32_t PID::compute(const uint32_t input) {
       // Calcualte P term
       // Note: the calculation is (uint32_t)setpoint - (uint32_t)(input) = (int32_t)error (using signed math)
       // This is true for offset binary values!
@@ -99,11 +99,13 @@ namespace Pid {
   /** Note: ki and kd must be normalized to the sampling time
    */
   void PID::setTunings(const int32_t kp, const int32_t ki, const int32_t kd, const ProportionalGain proportionalGain) {
-      // Invert the output, if the plant response to an error is positive
-      this->kp = (this->feedbackDirection == feedbackNegative) ? abs(kp) : -abs(kp);
-      this->ki = (this->feedbackDirection == feedbackNegative) ? abs(ki) : -abs(ki);
-      this->kd = (this->feedbackDirection == feedbackNegative) ? abs(kd) : -abs(kd);
-      
+      // We calculate error as: error = setpoint - input
+      // If the error is positive, the control output will be positive as well,
+      // so we need to invert the output if the plant response to an error is negative
+      this->kp = (this->feedbackDirection == feedbackPositive) ? abs(kp) : -abs(kp);
+      this->ki = (this->feedbackDirection == feedbackPositive) ? abs(ki) : -abs(ki);
+      this->kd = (this->feedbackDirection == feedbackPositive) ? abs(kd) : -abs(kd);
+
       this->proportionalGain = proportionalGain;
   }
 
@@ -123,12 +125,21 @@ namespace Pid {
       this->setpoint = value;
   }
 
-  const uint32_t PID::getSetpoint() {
+  uint32_t PID::getSetpoint() {
       return this->setpoint;
   }
 
+  int32_t PID::getIntegratorError() {
+      return this->errorSum;
+  }
+
   void PID::init(const uint32_t initialInput) {
-     this->previousInput = initialInput;
+      PID::init(initialInput, 0);
+  }
+
+  void PID::init(const uint32_t initialInput, const int32_t initialErrorSum) {
+      this->previousInput = initialInput;
+      this->errorSum = clamp(initialErrorSum, this->outputMin, this->outputMax);
   }
 
   void PID::updateOutput(const uint32_t value) {
@@ -141,15 +152,15 @@ namespace Pid {
     this->setTunings(this->kp, this->ki, this->kd);
   }
 
-  const uint32_t PID::getKp() {
+  uint32_t PID::getKp() {
       return this->kp;
   }
 
-  const uint32_t PID::getKi() {
+  uint32_t PID::getKi() {
       return  this->ki;
   }
 
-  const uint32_t PID::getKd() {
+  uint32_t PID::getKd() {
       return this->kd;
   }
 }   // namespace Pid

@@ -1,7 +1,7 @@
 #ifndef PID_H
 #define PID_H
 
-#include <stdint.h>
+#include <stdint.h>    // uint8_t, etc.
 
 #define LIKELY(x)       __builtin_expect(!!(x), 1)
 #define UNLIKELY(x)     __builtin_expect(!!(x), 0)
@@ -111,20 +111,22 @@ namespace Pid {
           PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t _qn, FeedbackDirection feedbackDirection);
           PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t _qn);
 
-          const uint32_t compute(uint32_t input);
+          uint32_t compute(uint32_t input);
 
           void setTunings(const int32_t kp, const int32_t ki, const int32_t kd);
           void setTunings(const int32_t kp, const int32_t ki, const int32_t kd, const ProportionalGain proportionalGain);
-          const uint32_t getKp();
-          const uint32_t getKi();
-          const uint32_t getKd();
+          uint32_t getKp();
+          uint32_t getKi();
+          uint32_t getKd();
           void setSetpoint(const uint32_t value);
-          const uint32_t getSetpoint();
+          uint32_t getSetpoint();
+          int32_t getIntegratorError();
           void setControllerFeedback(const FeedbackDirection feedbackDirection);
           void setOutputMin(const uint32_t value);
           void setOutputMax(const uint32_t value);
           void updateOutput(const uint32_t value);
           void init(const uint32_t initialInput);
+          void init(const uint32_t initialInput, const int32_t initialErrorSum);
       private:
           int32_t kp, ki, kd;
           FeedbackDirection feedbackDirection;
