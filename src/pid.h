@@ -11,7 +11,9 @@ namespace Pid {
   static inline int32_t clamp(const int32_t value, const int32_t min, const int32_t max) {
       return (value < min) ? min : (value > max) ? max : value;
   }
-  /* The instruction sets for different ARM processors can be found here
+  /* The following two functions contains special assembly optimizations for the Cortex M4. These optimizations require
+   * the QADD and QSUB processor instrutions found on the Cortex M4 (and more advanced architectures).
+   * The instruction sets for different ARM processors can be found here (look for 'Saturated instructions')
    * https://en.wikipedia.org/wiki/ARM_Cortex-M#Instruction_sets
    */
   static inline int32_t signed_add_saturated_32_and_32(const int32_t a, const int32_t b) __attribute__((always_inline, unused));
@@ -52,9 +54,19 @@ namespace Pid {
       #endif
   }
 
+  /* To get the assembly version of these functions go to https://godbolt.org/
+   * Use the ARM gcc 5.4.1 (none) compiler with the follwing options:
+   * "-O3 -Wl,  -mcpu=cortex-m4 -lstdc++ -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-precision-constant -larm_cortexM4lf_math"
+   * This resembles the Arduino options "fastest".
+   * To disassemble the ELF code to compare it to the code procuced by "Compiler Explorer" do the following:
+   * - Add __attribute__((noinline)), to make sure the compiler does not inline the code
+   * - Compile it using the option "fastest" or even better "fastest + LTO"
+   * - Then go to /tmp/arduino_build_XXX , where XXX is the number found in the Arduino console (requires verbose output)
+   * - Finally run ~/.arduino15/packages/arduino/tools/arm-none-eabi-gcc/4.8.3-2014q1/bin/arm-none-eabi-objdump -C -d YOUR_SKETCH.ino.elf (replacing "YOUR_SKETCH" with the name of your sketch)
+   */
   static inline int32_t signed_multiply_accumulate_saturated_32QN_and_32QN(const int32_t acc, const int32_t a, const int32_t b, const uint8_t qn) __attribute__((always_inline, unused));
   static inline int32_t signed_multiply_accumulate_saturated_32QN_and_32QN(const int32_t acc, const int32_t a, const int32_t b, const uint8_t qn) {
-      // Don't worry about the 64-bit ints, it is one op using the DSP extensions (smlal instruction)
+      // Don't worry about the 64-bit integers, it is one op using the DSP extensions (SMLAL instruction)
       // The compiler switch -O2 or -O3 is required! (Option Faster/Fastest)
       int64_t result = ((int64_t)acc << qn) + (int64_t) a * (int64_t) b;
       result >>= qn;    // When mulitplying two Qm.n numbers you will end up with a Qm^2.n^2 number, but we need Qm^2.n (fixed precision)
@@ -65,20 +77,9 @@ namespace Pid {
       if (UNLIKELY(hi != (lo >> 31))) {
           return ((uint32_t) (a ^ b) >> 31) + INT32_MAX;
       }
-
       return result;
   }
 
-  /* To get the Assembly version of this function go to https://godbolt.org/
-   * Using the ARM gcc 5.4.1 (none) compiler with the follwing options:
-   * "-O3 -Wl,  -mcpu=cortex-m4 -lstdc++ -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-precision-constant -larm_cortexM4lf_math"
-   * This resembles the Arduino options "fastest".
-   * To disassemble the ELF code to compare it to the code procuced by "Compiler Explorer"  do the following:
-   * - Add __attribute__((noinline)), to make sure the compiler does not inline the code
-   * - Compile it using the option "fastest" or even better "fastest + LTO"
-   * - Then go to /tmp/arduino_build_XXX , where XXX is the number found in the Arduino console (requires verbose output)
-   * - Finally run ~/.arduino15/packages/arduino/tools/arm-none-eabi-gcc/4.8.3-2014q1/bin/arm-none-eabi-objdump -C -d your_sketch.ino.elf (replacing "your_sketch" with the name of your sketch)
-   */
   static inline int32_t signed_multiply_accumulate_saturated_32_and_32QN(const int32_t acc, const int32_t a, const int32_t b) __attribute__((always_inline, unused));
   static inline int32_t signed_multiply_accumulate_saturated_32_and_32QN(const int32_t acc, const int32_t a, const int32_t b) {
       // Don't worry about the 64-bit int, it is one op using the DSP extensions (smlal instruction)
@@ -91,16 +92,15 @@ namespace Pid {
       if (UNLIKELY(hi != (lo >> 31))) {
           return ((uint32_t) (a ^ b) >> 31) + INT32_MAX;
       }
-
       return result;
   }
 
-  enum FeedbackDirection {
+  enum FeedbackDirection : bool {
       feedbackNegative = 0,
       feedbackPositive = 1,
   };
 
-  enum ProportionalGain {
+  enum ProportionalGain : bool {
       proportionalToInput = 0,
       proportionalToError = 1,
   };
