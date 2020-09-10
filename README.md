@@ -184,7 +184,7 @@ The floating point code is simpler because overflow conditions only need to be c
   typedef float myFloatType;
 #endif
 
-static inline const __attribute__((always_inline, unused)) myFloatType clamp(myFloatType value, myFloatType min, myFloatType max) {
+static inline __attribute__((always_inline, unused)) myFloatType clamp(myFloatType value, myFloatType min, myFloatType max) {
   return (value < min) ? min : (value > max) ? max : value;
 }
 
