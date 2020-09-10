@@ -14,6 +14,8 @@ namespace Pid {
   /* The following two functions contains special assembly optimizations for the Cortex M4. These optimizations require
    * the QADD and QSUB processor instrutions found on the Cortex M4 (and more advanced architectures).
    * The instruction sets for different ARM processors can be found here (look for 'Saturated instructions')
+   * The function signed_add_saturated_32_and_32() is not used in the PID library and only included for educational
+   * purposes.
    * https://en.wikipedia.org/wiki/ARM_Cortex-M#Instruction_sets
    */
   static inline int32_t signed_add_saturated_32_and_32(const int32_t a, const int32_t b) __attribute__((always_inline, unused));
@@ -27,7 +29,7 @@ namespace Pid {
       uint32_t ua = (uint32_t)a;
       uint32_t result = ua + (uint32_t)b;
       ua = (ua >> 31) + INT32_MAX;
-      
+
       if ((int32_t)((ua ^ b) | ~(b ^ result)) >= 0) {
           result = ua;
       }
