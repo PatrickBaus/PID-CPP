@@ -17,15 +17,15 @@
 #include "pid.h"
 
 namespace Pid {
-  PID::PID(const uint32_t _setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t _qn, FeedbackDirection _feedbackDirection, ProportionalGain proportionalGain)
+  PID::PID(const uint32_t _setpoint, const int32_t kp, const int32_t ki, const int32_t kd, const uint8_t _qn, const FeedbackDirection _feedbackDirection, const ProportionalGain proportionalGain)
       : feedbackDirection(_feedbackDirection), qn(_qn), setpoint(_setpoint) {
       this->setTunings(kp, ki, kd, proportionalGain);
   }
 
-  PID::PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t qn, FeedbackDirection feedbackDirection)
+  PID::PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, const uint8_t qn, const FeedbackDirection feedbackDirection)
       :PID::PID(setpoint, kp, ki, kd, qn, feedbackDirection, proportionalToError) {}
 
-  PID::PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t qn)
+  PID::PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, const uint8_t qn)
       :PID::PID(setpoint, kp, ki, kd, qn, feedbackNegative) {}
 
   /**
