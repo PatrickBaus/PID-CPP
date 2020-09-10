@@ -26,18 +26,18 @@ The table below gives a summary of the different datatypes. Using single precisi
 ## API
 #### Constructor:
 ```c
-   enum FeedbackDirection {
+   enum FeedbackDirection : bool {
      feedbackPositive = 0,
      feedbackNegative = 1,
    };
-   enum ProportionalGain {
+   enum ProportionalGain : bool {
      proportionalToInput = 0,
      proportionalToError = 1,
    };
 
-   PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t _qn, FeedbackDirection feedbackDirection, ProportionalGain proportionalGain);
-   PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t _qn, FeedbackDirection feedbackDirection);
-   PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, uint8_t _qn);
+   PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, const uint8_t qn, const FeedbackDirection feedbackDirection, const ProportionalGain proportionalGain);
+   PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, const uint8_t qn, const FeedbackDirection feedbackDirection);
+   PID(const uint32_t setpoint, const int32_t kp, const int32_t ki, const int32_t kd, const uint8_t qn);
 ```
 ___Arguments___
 * `setpoint` [unsigned long] : The value in units of the input. It is the sensor value the controller will servo
@@ -53,7 +53,7 @@ Default: `proportionalToError`
 
 ### Methods
 ```c
-   const uint32_t compute(uint32_t input);
+   uint32_t compute(const uint32_t input);
 ```
 This function is the PID routine. It calculates the output based on the input and previous inputs. It needs to be called in regular intervals. In contrast to other libraries, this is not handled internally, because it gives more flexibility to the user.
 
@@ -97,12 +97,12 @@ ___Arguments___
 
 See [constructor](#constructor)
 
-### Setters
+### Getters
 ```c
-   const uint32_t getKp();
-   const uint32_t getKi();
-   const uint32_t getKd();
-   const uint32_t getSetpoint();
+   uint32_t getKp();
+   uint32_t getKi();
+   uint32_t getKd();
+   uint32_t getSetpoint();
 ```
 Use these to query the internal state.
 
