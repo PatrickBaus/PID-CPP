@@ -5,7 +5,7 @@ int32_t kp = 1011120;
 int32_t ki = 1320*1000;
 int32_t kd = 5280 * 1000;
 uint8_t qn = 22;    // Set QN to 32 - DAC resolution
-Pid::PID pidController = Pid::PID(0, kp, ki, kd, qn);
+Pid::PID pidController = Pid::PID(setpoint, kp, ki, kd, qn);
 
 const unsigned short DAC_OUTPUT_PIN = 2;
 const unsigned short ADC_INPUT_PIN = 0;
