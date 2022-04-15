@@ -15,7 +15,7 @@ Fixed point arithmetic on the other hand is a more natural representation for th
 
 The downside is, that we need saturating mathematical operations to make sure, that the calculations do not produce unexpected results. Some microcontrollers like the Cortex M4 support DSP instructions, which can do this in hardware.
 
-The table below gives a summary of the different datatypes. Using single precision floats and ADC/DAC combinations with more than 12 bit is questionable because the system 'gain' will then be limited to (24 - DAC_resolution).
+The table below gives a summary of the different datatypes. Using single precision floats and ADC/DAC combinations with more than 12 bit is questionable, because the system 'gain' will be limited to (24 - DAC_resolution) due to the floating point precision.
 
 |Datatype|Width|Precision|Comments|
 |--|--|--|--|

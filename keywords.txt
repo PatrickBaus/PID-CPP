@@ -1,0 +1,23 @@
+# Syntax Coloring Map For ExampleLibrary
+
+# Datatypes (KEYWORD1)
+PID                     KEYWORD1
+
+# Methods and Functions (KEYWORD2)
+compute                 KEYWORD2
+setTunings              KEYWORD2
+getKp                   KEYWORD2
+getKi                   KEYWORD2
+getKd                   KEYWORD2
+setSetpoint             KEYWORD2
+getSetpoint             KEYWORD2
+getIntegratorError      KEYWORD2
+setControllerFeedback   KEYWORD2
+setOutputMin            KEYWORD2
+setOutputMax            KEYWORD2
+updateOutput            KEYWORD2
+init                    KEYWORD2
+
+# Instances (KEYWORD2)
+
+# Constants (LITERAL1)

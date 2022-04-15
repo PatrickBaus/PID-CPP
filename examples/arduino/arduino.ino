@@ -35,7 +35,7 @@ void loop() {
   static unsigned long lastTime = millis();    // Initialize lastTime *once* during the first loop iteration
 
   unsigned long currentTime = millis();
-  if (currentTime - lastTime >= pidPeriod) {    // Only run the pid controller
+  if (currentTime - lastTime >= pidPeriod) {    // Only run the pid controller in pidPeriod intervals
     unsigned short inputValue = analogRead(ADC_INPUT_PIN);  // Read a new analog value
     unsigned short outputValue = pidController.compute(inputValue);   // Compute the PID output
     analogWrite(DAC_OUTPUT_PIN, outputValue);    // Write it to the DAC
