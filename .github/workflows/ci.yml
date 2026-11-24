@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  # Pull requests are tested by the pull_request event. Running on every push as well would test each commit twice.
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+# A newer commit on the same branch or pull request cancels the runs of the older one
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Host tests and coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install gcovr
+        run: pipx install gcovr
+
+      - name: Configure
+        run: cmake -S test -B test/build
+
+      - name: Build
+        run: cmake --build test/build --parallel
+
+      - name: Run tests
+        run: ctest --test-dir test/build --output-on-failure
+
+      - name: Check coverage (100 % lines and branches of src/)
+        run: |
+          mkdir -p coverage
+          gcovr --root . --filter src/ \
+            --exclude-throw-branches --exclude-unreachable-branches \
+            --fail-under-line 100 --fail-under-branch 100 \
+            --print-summary --txt-metric branch \
+            --html-details coverage/index.html --xml coverage/coverage.xml \
+            test/build
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-report
+          path: coverage/
+          if-no-files-found: warn
+
+      - name: Build with UBSan and ASan
+        run: |
+          cmake -S test -B test/build-sanitize -DSANITIZE=ON
+          cmake --build test/build-sanitize --parallel
+
+      - name: Run tests with UBSan and ASan
+        run: ctest --test-dir test/build-sanitize --output-on-failure
+
+  lint:
+    name: Arduino Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: arduino/arduino-lint-action@9a3603836c75e41753e531167395edeb90ba5dae # v3.0.0
+        with:
+          # The library is not part of the Library Manager index, so the "update" mode would fail with rule LP018
+          library-manager: false
+          # "strict" fails, because the name in library.properties contains a space and the word "Library"
+          compliance: specification
+
+  compile-examples:
+    name: Compile examples (${{ matrix.board.fqbn }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        board:
+          # Cortex-M4, this is the only board which uses the QADD/QSUB assembly in pid.h.
+          # The benchmark in extras/ only supports the Teensy 3.x and the Teensy LC.
+          - fqbn: teensy:avr:teensy31
+            platforms: |
+              - name: teensy:avr
+                source-url: https://www.pjrc.com/teensy/package_teensy_index.json
+            sketch-paths: |
+              - examples
+              - extras/benchmark
+          # Cortex-M0+
+          - fqbn: teensy:avr:teensyLC
+            platforms: |
+              - name: teensy:avr
+                source-url: https://www.pjrc.com/teensy/package_teensy_index.json
+            sketch-paths: |
+              - examples
+              - extras/benchmark
+          # 8 bit, an int is 16 bit wide
+          - fqbn: arduino:avr:uno
+            platforms: |
+              - name: arduino:avr
+            sketch-paths: |
+              - examples
+          - fqbn: arduino:samd:mkrzero
+            platforms: |
+              - name: arduino:samd
+            sketch-paths: |
+              - examples
+          - fqbn: esp32:esp32:esp32
+            platforms: |
+              - name: esp32:esp32
+                source-url: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+            sketch-paths: |
+              - examples
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: arduino/compile-sketches@3f3921bad94c706a153e6d7294445b49d7f76a63 # v1.1.4
+        with:
+          fqbn: ${{ matrix.board.fqbn }}
+          platforms: ${{ matrix.board.platforms }}
+          libraries: |
+            - source-path: ./
+          sketch-paths: ${{ matrix.board.sketch-paths }}
+          enable-deltas-report: false

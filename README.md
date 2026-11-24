@@ -1,4 +1,6 @@
 # PID-CPP
+[![CI](https://github.com/PatrickBaus/PID-CPP/actions/workflows/ci.yml/badge.svg)](https://github.com/PatrickBaus/PID-CPP/actions/workflows/ci.yml)
+
 This a C++ library implementing a PID controller intended for microcontrollers. It is a fixed point math implementation that was optimized for performance on the ARM Cortex M4 processors. The library was inspired by the excellent [blog series](http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/) written by Brett Beauregard and the PID library he put on Github (https://github.com/br3ttb/Arduino-PID-Library/).
 
 **This library is about a [factor of 7-10](#performance-comparison) faster than the Arduino PID library!**
@@ -219,6 +221,27 @@ The spread in the number of Ops required to run one iteration of the `compute()`
 |Double Precision Arithmetic|2827-2845 Ops/Call|1107-1200 Ops/Call|
 
 In conclusion, it can be said, that unless you have an MCU with a dedicated FPU and do not need the precision of 32 bits, than it is recommended to use fixed point arithmetic for a 7-10x increase in performance.
+
+## Tests
+The library does not depend on the Arduino API, so the tests run on any Linux host. They are found in the [test](test) folder and use [doctest](https://github.com/doctest/doctest), which is downloaded by CMake. The controller is compared to an exact integer model using 64-bit arithmetic and to a double precision PID controller. To build and run the tests, [CMake](https://cmake.org/) and a C++11 compiler are required:
+```bash
+cmake -S test -B test/build
+cmake --build test/build
+ctest --test-dir test/build --output-on-failure
+```
+
+The line and branch coverage of the files in `src/` must be 100%. It is checked using [gcovr](https://gcovr.com/) after running the tests:
+```bash
+gcovr --root . --filter 'src/' --exclude-throw-branches --exclude-unreachable-branches \
+  --fail-under-line 100 --fail-under-branch 100 --txt - --html-details test/build/coverage.html test/build
+```
+
+Fixed point code is prone to integer overflows, so the tests are also run with the undefined behaviour sanitizer and the address sanitizer enabled:
+```bash
+cmake -S test -B test/build-sanitize -DSANITIZE=ON
+cmake --build test/build-sanitize
+ctest --test-dir test/build-sanitize --output-on-failure
+```
 
 ## Versioning
 
