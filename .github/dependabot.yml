@@ -4,3 +4,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # One pull request for all action updates instead of one per action
+    groups:
+      github-actions:
+        patterns:
+          - "*"
