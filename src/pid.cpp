@@ -152,15 +152,22 @@ namespace Pid {
     this->setTunings(this->kp, this->ki, this->kd);
   }
 
+  /**
+      Calculate |value| as an unsigned number. The gains are stored with the sign of the feedback direction.
+  */
+  static inline uint32_t unsigned_magnitude(const int32_t value) {
+      return (value < 0) ? (uint32_t)0 - (uint32_t)value : (uint32_t)value;
+  }
+
   uint32_t PID::getKp() {
-      return this->kp;
+      return unsigned_magnitude(this->kp);
   }
 
   uint32_t PID::getKi() {
-      return  this->ki;
+      return unsigned_magnitude(this->ki);
   }
 
   uint32_t PID::getKd() {
-      return this->kd;
+      return unsigned_magnitude(this->kd);
   }
 }   // namespace Pid
