@@ -27,8 +27,8 @@ The table below gives a summary of the different datatypes. Using single precisi
 #### Constructor:
 ```c
    enum FeedbackDirection : bool {
-     feedbackPositive = 0,
-     feedbackNegative = 1,
+     feedbackNegative = 0,
+     feedbackPositive = 1,
    };
    enum ProportionalGain : bool {
      proportionalToInput = 0,
@@ -58,7 +58,7 @@ Default: `proportionalToError`
 This function is the PID routine. It calculates the output based on the input and previous inputs. It needs to be called in regular intervals. In contrast to other libraries, this is not handled internally, because it gives more flexibility to the user.
 
 ___Arguments___
-* `value` [unsigned long] : The sensor input
+* `input` [unsigned long] : The sensor input
 
 ___Returns___
 * [unsigned long] : The PID output. It will be scaled using the `qn` parameter, so that it does **not** contain the fractional part. It can be directly fed to the output hardware.
@@ -66,11 +66,14 @@ ___Returns___
 ### Setters
 ```c
    void init(const uint32_t initialInput);
+   void init(const uint32_t initialInput, const int32_t initialErrorSum);
 ```
 Call this function after switching from manual control to PID control or when initializing the PID controller.
 
 ___Arguments___
-* `value` [unsigned long] : This value initilizes the internal previous input variable used to calculate the derivative term
+* `initialInput` [unsigned long] : This value initilizes the internal previous input variable used to calculate the derivative term
+* `initialErrorSum` [long] : The initial value of the internal error sum of the integral term. It is a signed number relative to the midscale output, which includes the `qn` fractional bits. It is limited to the output limits.  
+Default: `0`, which is the midscale output
 
 ```c
    void updateOutput(const uint32_t value);
@@ -103,8 +106,9 @@ See [constructor](#constructor)
    uint32_t getKi();
    uint32_t getKd();
    uint32_t getSetpoint();
+   int32_t getIntegratorError();
 ```
-Use these to query the internal state.
+Use these to query the internal state. `getIntegratorError()` returns the internal error sum of the integral term, see `init()`.
 
 ## Examples
 This is an example, which runs on the Arduino platform. It is very simple and does not implement advanced features like setpoint changes, or a manual mode. It only implements regular calls to the `compute()` method.
