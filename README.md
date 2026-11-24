@@ -1,4 +1,6 @@
 # PID-CPP
+[![CI](https://github.com/PatrickBaus/PID-CPP/actions/workflows/ci.yml/badge.svg)](https://github.com/PatrickBaus/PID-CPP/actions/workflows/ci.yml)
+
 This a C++ library implementing a PID controller intended for microcontrollers. It is a fixed point math implementation that was optimized for performance on the ARM Cortex M4 processors. The library was inspired by the excellent [blog series](http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/) written by Brett Beauregard and the PID library he put on Github (https://github.com/br3ttb/Arduino-PID-Library/).
 
 **This library is about a [factor of 7-10](#performance-comparison) faster than the Arduino PID library!**
