@@ -2,8 +2,8 @@
 unsigned long pidPeriod = 500;
 unsigned long setpoint = 512;
 int32_t kp = 1011120;
-int32_t ki = 1320*1000;
-int32_t kd = 5280 * 1000;
+int32_t ki = 1320L * 1000;    // Use long arithmetic, an int is only 16 bit wide on AVR
+int32_t kd = 5280L * 1000;
 uint8_t qn = 22;    // Set QN to 32 - DAC resolution
 Pid::PID pidController = Pid::PID(setpoint, kp, ki, kd, qn);
 
