@@ -70,7 +70,9 @@ namespace Pid {
   static inline int32_t signed_multiply_accumulate_saturated_32QN_and_32QN(const int32_t acc, const int32_t a, const int32_t b, const uint8_t qn) {
       // Don't worry about the 64-bit integers, it is one op using the DSP extensions (SMLAL instruction)
       // The compiler switch -O2 or -O3 is required! (Option Faster/Fastest)
-      int64_t result = ((int64_t)acc << qn) + (int64_t) a * (int64_t) b;
+      // Note: The accumulator is multiplied by 2^qn instead of shifting it, because shifting a negative number to the
+      // left is undefined behaviour. The compiler will turn this into a shift.
+      int64_t result = (int64_t)acc * ((int64_t)1 << qn) + (int64_t) a * (int64_t) b;
       result >>= qn;    // When mulitplying two Qm.n numbers you will end up with a Qm^2.n^2 number, but we need Qm^2.n (fixed precision)
       int32_t hi = (int32_t)(result >> 32);
       int32_t lo = (int32_t)result;
