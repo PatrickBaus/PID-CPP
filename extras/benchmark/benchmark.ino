@@ -3,6 +3,7 @@
 #define DOUBLE_PRECISION_MATH
 
 #include "pid.h"
+using namespace Pid;
 #ifdef FIXED_POINT_MATH
   const uint32_t setpoint = 25420;
   const int32_t kp = -1011120;
