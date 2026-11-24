@@ -13,7 +13,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>   // abs()
 #include "pid.h"
 
 namespace Pid {
@@ -96,15 +95,31 @@ namespace Pid {
       return (uint32_t)output >> this->qn;
   }
 
+  /**
+      Calculate -|value|. In contrast to |value| this can be calculated for all inputs without an overflow. Do not use
+      abs() here, because its argument is an int, which is only 16 bit wide on the AVR platform.
+  */
+  static inline int32_t negative_magnitude(const int32_t value) {
+      return (value > 0) ? -value : value;
+  }
+
+  /**
+      Calculate |value|. The result saturates at INT32_MAX, because |INT32_MIN| cannot be represented.
+  */
+  static inline int32_t positive_magnitude(const int32_t value) {
+      const int32_t result = negative_magnitude(value);
+      return (result == INT32_MIN) ? INT32_MAX : -result;
+  }
+
   /** Note: ki and kd must be normalized to the sampling time
    */
   void PID::setTunings(const int32_t kp, const int32_t ki, const int32_t kd, const ProportionalGain proportionalGain) {
       // We calculate error as: error = setpoint - input
       // If the error is positive, the control output will be positive as well,
       // so we need to invert the output if the plant response to an error is negative
-      this->kp = (this->feedbackDirection == feedbackPositive) ? abs(kp) : -abs(kp);
-      this->ki = (this->feedbackDirection == feedbackPositive) ? abs(ki) : -abs(ki);
-      this->kd = (this->feedbackDirection == feedbackPositive) ? abs(kd) : -abs(kd);
+      this->kp = (this->feedbackDirection == feedbackPositive) ? positive_magnitude(kp) : negative_magnitude(kp);
+      this->ki = (this->feedbackDirection == feedbackPositive) ? positive_magnitude(ki) : negative_magnitude(ki);
+      this->kd = (this->feedbackDirection == feedbackPositive) ? positive_magnitude(kd) : negative_magnitude(kd);
 
       this->proportionalGain = proportionalGain;
   }
