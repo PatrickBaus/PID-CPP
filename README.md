@@ -115,7 +115,7 @@ unsigned long setpoint = 512;
 int32_t kp = 1011120;
 int32_t ki = 1320*1000;
 int32_t kd = 5280 * 1000;
-uint8_t qn = 22;    // Set QN to 32 - DAC resolution
+uint8_t qn = 24;    // Set QN to 32 - DAC resolution. analogWrite() has a resolution of 8 bit by default.
 Pid::PID pidController = Pid::PID(setpoint, kp, ki, kd, qn);
 
 const unsigned short DAC_OUTPUT_PIN = 2;
@@ -129,7 +129,7 @@ void setup() {
   pinMode(ADC_INPUT_PIN, INPUT);
 
   pidController.setOutputMin(0);      // This is the default
-  pidController.setOutputMax(1023);   // The Arduino has a 10-bit'analog' PWM output,
+  pidController.setOutputMax(255);    // The Arduino has an 8-bit 'analog' PWM output,
                                       // but the maximum output can be adjusted down.
 
   pidController.init(analogRead(ADC_INPUT_PIN));  // Initialize the pid controller to make sure there
