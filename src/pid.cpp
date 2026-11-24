@@ -17,6 +17,15 @@
 #include "pid.h"
 
 namespace Pid {
+  /**
+      Convert an unsigned number in Offset Binary notation to a signed number (two's complement) by subtracting 2^31.
+      The difference of two converted numbers is the same as the difference of the two unsigned numbers and the
+      saturating subtraction can be used to limit it to the range of a signed 32 bit integer.
+  */
+  static inline int32_t offset_binary_to_signed(const uint32_t value) {
+      return (int32_t)(value ^ 0x80000000);
+  }
+
   PID::PID(const uint32_t _setpoint, const int32_t kp, const int32_t ki, const int32_t kd, const uint8_t _qn, const FeedbackDirection _feedbackDirection, const ProportionalGain proportionalGain)
       : feedbackDirection(_feedbackDirection), qn(_qn), setpoint(_setpoint) {
       this->setTunings(kp, ki, kd, proportionalGain);
@@ -43,8 +52,10 @@ namespace Pid {
   uint32_t PID::compute(const uint32_t input) {
       // Calcualte P term
       // Note: the calculation is (uint32_t)setpoint - (uint32_t)(input) = (int32_t)error (using signed math)
-      // This is true for offset binary values!
-      const int32_t error = signed_subtract_saturated_32_and_32(this->setpoint, input);    // Subtract using saturating math
+      // This is true for offset binary values, once they have been converted to two's complement. Without the
+      // conversion the subtraction saturates with the wrong sign, if the values are on different sides of 2^31.
+      const int32_t signedInput = offset_binary_to_signed(input);
+      const int32_t error = signed_subtract_saturated_32_and_32(offset_binary_to_signed(this->setpoint), signedInput);    // Subtract using saturating math
       // Calcualte I term
       // TODO: Think about taking into account the previous result as well
       // -> Bilinear Transform instead of Backward difference
@@ -60,7 +71,7 @@ namespace Pid {
       //        = dSetpoint - dInput
       // We would like to get rid of the setpoint dependence and during normal operation, there is no difference
       //        ≈ -dInput
-      const int32_t dInputNegative = signed_subtract_saturated_32_and_32(this->previousInput, input);    // Subtract using saturating math
+      const int32_t dInputNegative = signed_subtract_saturated_32_and_32(offset_binary_to_signed(this->previousInput), signedInput);    // Subtract using saturating math
 
       // Store the input to calculate the D-term next time
       this->previousInput = input;
